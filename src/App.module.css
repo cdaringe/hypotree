@@ -22,6 +22,9 @@
 .settingsMenu strong,.settingsMenu small { display: block; }
 .settingsMenu strong { color: #c2cbc6; font-size: 10px; }
 .settingsMenu small { margin-top: 2px; color: #6f7a74; font-size: 9px; }
+.githubLink { width: 25px; height: 25px; display: grid; place-items: center; color: #59635e; transition: 120ms ease; }
+.githubLink svg { fill: currentColor; }
+.githubLink:hover { color: #a9b7b0; background: #202622; }
 .shareButton svg,.iconButton svg { fill: currentColor; }
 .shareButton:hover,.primaryButton:hover,.copyButton:hover { border-color: #58aa7c; background: #21452f; color: #d0f4dd; }
 .workspace { width: min(920px,calc(100% - 28px)); margin: 0 auto; padding: 18px 0 36px; }

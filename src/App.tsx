@@ -591,7 +591,14 @@ const App: Component = () => {
           </div>
         </section>
       </div>
-      <footer><span>Stored locally</span><span>Shareable snapshot</span></footer>
+      <footer>
+        <span>Stored locally</span><span>Shareable snapshot</span>
+        <a class={styles.githubLink} href="https://github.com/cdaringe/hypotree" target="_blank" rel="noreferrer" aria-label="Hypotree on GitHub" title="View source on GitHub">
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M8 .7a7.5 7.5 0 0 0-2.37 14.62c.38.07.51-.16.51-.36v-1.45c-2.09.45-2.53-.89-2.53-.89-.34-.87-.84-1.1-.84-1.1-.68-.47.05-.46.05-.46.76.05 1.16.78 1.16.78.67 1.15 1.76.82 2.19.63.07-.49.26-.82.48-1.01-1.67-.19-3.43-.84-3.43-3.71 0-.82.29-1.49.77-2.02-.08-.19-.33-.96.07-1.99 0 0 .63-.2 2.06.77A7.2 7.2 0 0 1 8 4.46c.64 0 1.28.09 1.88.25 1.43-.97 2.06-.77 2.06-.77.4 1.03.15 1.8.07 1.99.48.53.77 1.2.77 2.02 0 2.88-1.76 3.51-3.43 3.7.27.24.51.7.51 1.4v1.91c0 .2.13.43.52.36A7.5 7.5 0 0 0 8 .7Z" />
+          </svg>
+        </a>
+      </footer>
 
       <Show when={showHelp()}>
         <div
