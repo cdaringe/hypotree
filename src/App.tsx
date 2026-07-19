@@ -6,22 +6,41 @@ import Icon from './Icon';
 
 type Hypothesis = {
   id: string;
+  createdAt: number;
   statement: string;
   status?: 'proven' | 'debunked';
   closureReason?: string;
-  observations: { id: string; text: string }[];
+  observations: { id: string; text: string; createdAt: number }[];
   children: Hypothesis[];
   collapsed: boolean;
 };
 
 type Workspace = { problem: string; hypotheses: Hypothesis[] };
-type StoredWorkspace = { workspace: Workspace; updatedAt: number };
+type AppSettings = { showTimestamps: boolean };
+type StoredWorkspace = { workspace: Workspace; settings?: AppSettings; updatedAt: number };
 
 const STORAGE_KEY = 'hypotree:workspace:v1';
+const SETTINGS_KEY = 'hypotree:settings:v1';
+
+const loadTimestampSetting = () => {
+  try {
+    const hash = new URLSearchParams(location.hash.slice(1)).get('tree');
+    const fromUrl = hash ? asStoredWorkspace(decodeWorkspace(hash)) : null;
+    const fromStorage = asStoredWorkspace(JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'));
+    const newest = [fromUrl, fromStorage]
+      .filter((entry): entry is StoredWorkspace => entry !== null)
+      .sort((a, b) => b.updatedAt - a.updatedAt)[0];
+    if (newest?.settings) return newest.settings.showTimestamps;
+    return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}').showTimestamps === true;
+  } catch {
+    return false;
+  }
+};
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 const newHypothesis = (): Hypothesis => ({
   id: uid(),
+  createdAt: Date.now(),
   statement: '',
   observations: [],
   children: [],
@@ -48,6 +67,21 @@ const isWorkspace = (value: unknown): value is Workspace => {
   return typeof candidate.problem === 'string' && Array.isArray(candidate.hypotheses);
 };
 
+const addMissingTimestamps = (workspace: Workspace, fallback: number): Workspace => ({
+  ...workspace,
+  hypotheses: workspace.hypotheses.map(function timestampNode(node): Hypothesis {
+    return {
+      ...node,
+      createdAt: node.createdAt || fallback,
+      observations: node.observations.map((observation) => ({
+        ...observation,
+        createdAt: observation.createdAt || fallback,
+      })),
+      children: node.children.map(timestampNode),
+    };
+  }),
+});
+
 const asStoredWorkspace = (value: unknown): StoredWorkspace | null => {
   if (!value || typeof value !== 'object') return null;
   const candidate = value as Partial<StoredWorkspace>;
@@ -64,7 +98,7 @@ const loadWorkspace = (): Workspace => {
     const newest = [fromUrl, fromStorage]
       .filter((entry): entry is StoredWorkspace => entry !== null)
       .sort((a, b) => b.updatedAt - a.updatedAt)[0];
-    if (newest) return newest.workspace;
+    if (newest) return addMissingTimestamps(newest.workspace, newest.updatedAt);
   } catch (error) {
     console.warn('Could not restore the hypothesis tree', error);
   }
@@ -116,13 +150,21 @@ const insertSibling = (
 });
 
 const markdownLine = (value: string) => value.trim().replaceAll('\n', '<br>');
+const exportTime = (timestamp: number) => new Date(timestamp).toISOString();
+const displayTime = (timestamp: number) => new Intl.DateTimeFormat(undefined, {
+  dateStyle: 'medium', timeStyle: 'short',
+}).format(timestamp);
 const hypothesesToMarkdown = (nodes: Hypothesis[], depth = 0): string[] => nodes.flatMap((node) => {
   const indent = '  '.repeat(depth);
   const lines = [`${indent}- **Hypothesis:** ${markdownLine(node.statement) || '_Untitled_'}`];
+  lines.push(`${indent}  - **Added:** ${exportTime(node.createdAt)}`);
   if (node.status) lines.push(`${indent}  - **Status:** ${node.status === 'proven' ? 'Proven' : 'Debunked'}`);
   if (node.status && node.closureReason) lines.push(`${indent}  - **Reason:** ${markdownLine(node.closureReason)}`);
   node.observations.forEach((observation) => {
-    if (observation.text.trim()) lines.push(`${indent}  - **Observation:** ${markdownLine(observation.text)}`);
+    if (observation.text.trim()) {
+      lines.push(`${indent}  - **Observation:** ${markdownLine(observation.text)}`);
+      lines.push(`${indent}    - **Added:** ${exportTime(observation.createdAt)}`);
+    }
   });
   return [...lines, ...hypothesesToMarkdown(node.children, depth + 1)];
 });
@@ -148,10 +190,11 @@ const HypothesisCard: Component<{
   startDragging: (id: string, event: DragEvent) => void;
   finishDragging: () => void;
   reparent: (id: string, targetId: string | null, position?: 'before' | 'inside' | 'after') => void;
+  showTimestamps: () => boolean;
 }> = (props) => {
   const addObservation = () => props.update(props.node.id, (node) => ({
     ...node,
-    observations: [...node.observations, { id: uid(), text: '' }],
+    observations: [...node.observations, { id: uid(), text: '', createdAt: Date.now() }],
   }));
 
   return (
@@ -210,6 +253,9 @@ const HypothesisCard: Component<{
           <span class={styles.summary} title={props.node.statement}>
             {props.node.collapsed && (props.node.statement || 'Untitled hypothesis')}
           </span>
+          <Show when={props.showTimestamps()}>
+            <time class={styles.nodeTime} dateTime={new Date(props.node.createdAt).toISOString()}>{displayTime(props.node.createdAt)}</time>
+          </Show>
           <div class={styles.outcomeControls} aria-label="Hypothesis outcome">
             <button
               classList={{ [styles.outcomeButton]: true, [styles.provenActive]: props.node.status === 'proven' }}
@@ -270,20 +316,25 @@ const HypothesisCard: Component<{
                 <Index each={props.node.observations}>{(observation) => (
                   <div class={styles.observation}>
                     <span class={styles.observationMark}>↳</span>
-                    <textarea
-                      value={observation().text}
-                      ref={(element) => queueMicrotask(() => resizeObservation(element))}
-                      onInput={(event) => {
-                        resizeObservation(event.currentTarget);
-                        props.update(props.node.id, (node) => ({
-                          ...node,
-                          observations: node.observations.map((item) => item.id === observation().id ? { ...item, text: event.currentTarget.value } : item),
-                        }));
-                      }}
-                      placeholder="What did you observe?"
-                      aria-label="Observation"
-                      rows={1}
-                    />
+                    <div class={styles.observationContent}>
+                      <Show when={props.showTimestamps()}>
+                        <time class={styles.observationTime} dateTime={new Date(observation().createdAt).toISOString()}>Added {displayTime(observation().createdAt)}</time>
+                      </Show>
+                      <textarea
+                        value={observation().text}
+                        ref={(element) => queueMicrotask(() => resizeObservation(element))}
+                        onInput={(event) => {
+                          resizeObservation(event.currentTarget);
+                          props.update(props.node.id, (node) => ({
+                            ...node,
+                            observations: node.observations.map((item) => item.id === observation().id ? { ...item, text: event.currentTarget.value } : item),
+                          }));
+                        }}
+                        placeholder="What did you observe?"
+                        aria-label="Observation"
+                        rows={1}
+                      />
+                    </div>
                     <button
                       class={styles.removeObservation}
                       onClick={() => props.update(props.node.id, (node) => ({ ...node, observations: node.observations.filter((item) => item.id !== observation().id) }))}
@@ -316,6 +367,7 @@ const HypothesisCard: Component<{
                   startDragging={props.startDragging}
                   finishDragging={props.finishDragging}
                   reparent={props.reparent}
+                  showTimestamps={props.showTimestamps}
                 />
               )}</Index>
             </div>
@@ -332,13 +384,19 @@ const App: Component = () => {
   const [copied, setCopied] = createSignal(false);
   const [markdownCopied, setMarkdownCopied] = createSignal(false);
   const [showHelp, setShowHelp] = createSignal(false);
+  const [showSettings, setShowSettings] = createSignal(false);
+  const [showTimestamps, setShowTimestamps] = createSignal(loadTimestampSetting());
   const [draggingId, setDraggingId] = createSignal<string | null>(null);
   const [dropTarget, setDropTarget] = createSignal<string | null>(null);
   let saveTimer: number | undefined;
 
   const persist = (snapshot = workspace()) => {
     window.clearTimeout(saveTimer);
-    const stored = { workspace: snapshot, updatedAt: Date.now() };
+    const stored: StoredWorkspace = {
+      workspace: snapshot,
+      settings: { showTimestamps: showTimestamps() },
+      updatedAt: Date.now(),
+    };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
     const params = new URLSearchParams({ tree: encodeWorkspace(stored) });
     history.replaceState(null, '', `${location.pathname}${location.search}#${params}`);
@@ -351,10 +409,17 @@ const App: Component = () => {
     window.clearTimeout(saveTimer);
     saveTimer = window.setTimeout(() => persist(snapshot), 500);
   });
+  createEffect(() => {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ showTimestamps: showTimestamps() }));
+    persist();
+  });
 
   onMount(() => {
     const handleSaveShortcut = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setShowHelp(false);
+      if (event.key === 'Escape') {
+        setShowHelp(false);
+        setShowSettings(false);
+      }
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
         event.preventDefault();
         persist();
@@ -436,6 +501,19 @@ const App: Component = () => {
         <div class={styles.headerActions}>
           <span class={styles.saveState}><span class={styles.statusDot} />{saveState()}</span>
           <button class={styles.helpButton} onClick={() => setShowHelp(true)}>How to</button>
+          <div class={styles.settingsWrap}>
+            <button class={styles.settingsButton} onClick={() => setShowSettings((open) => !open)} aria-expanded={showSettings()} aria-haspopup="menu">
+              <Icon name="settings" size={16} /> Settings
+            </button>
+            <Show when={showSettings()}>
+              <div class={styles.settingsMenu} role="menu">
+                <label>
+                  <input type="checkbox" checked={showTimestamps()} onChange={(event) => setShowTimestamps(event.currentTarget.checked)} />
+                  <span><strong>Show timestamps</strong><small>Display when entries were added</small></span>
+                </label>
+              </div>
+            </Show>
+          </div>
           <button class={styles.copyButton} onClick={copyMarkdown}><span>⧉</span> {markdownCopied() ? 'Copied' : 'Markdown'}</button>
           <button class={styles.shareButton} onClick={share}><Icon name="link" size={16} /> {copied() ? 'Copied' : 'Share'}</button>
         </div>
@@ -506,6 +584,7 @@ const App: Component = () => {
                   }}
                   finishDragging={finishDragging}
                   reparent={reparent}
+                  showTimestamps={showTimestamps}
                 />
               )}</Index>
             </Show>

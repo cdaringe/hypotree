@@ -11,6 +11,17 @@
 .copyButton { gap: 6px; padding: 5px 9px; border-color: #35413b; background: #1a201d; color: #9da8a2; }
 .helpButton { padding: 4px 2px; border: 0; border-bottom: 1px solid transparent; background: transparent; color: #89938e; cursor: pointer; font: 600 10px var(--sans); }
 .helpButton:hover { border-bottom-color: #61c98e; color: #b7dec7; }
+.settingsWrap { position: relative; }
+.settingsButton { padding: 4px 2px; border: 0; background: transparent; display: flex; align-items: center; gap: 5px; color: #89938e; cursor: pointer; font: 600 10px var(--sans); }
+.settingsButton svg { fill: currentColor; }
+.settingsButton:hover { color: #b7dec7; }
+.settingsMenu { width: 230px; padding: 6px; position: absolute; top: calc(100% + 10px); right: 0; z-index: 20; border: 1px solid #354039; background: #181d1a; box-shadow: 0 12px 35px rgba(0,0,0,.45); }
+.settingsMenu label { padding: 8px; display: flex; align-items: flex-start; gap: 9px; cursor: pointer; }
+.settingsMenu label:hover { background: #202722; }
+.settingsMenu input { margin-top: 2px; accent-color: #58ce8a; }
+.settingsMenu strong,.settingsMenu small { display: block; }
+.settingsMenu strong { color: #c2cbc6; font-size: 10px; }
+.settingsMenu small { margin-top: 2px; color: #6f7a74; font-size: 9px; }
 .shareButton svg,.iconButton svg { fill: currentColor; }
 .shareButton:hover,.primaryButton:hover,.copyButton:hover { border-color: #58aa7c; background: #21452f; color: #d0f4dd; }
 .workspace { width: min(920px,calc(100% - 28px)); margin: 0 auto; padding: 18px 0 36px; }
@@ -40,7 +51,7 @@ textarea::placeholder,input::placeholder { color: #5d6561; }
 .node:has(>.card>.cardHeader .provenActive)>.nodeRail { background: #6ee3a0; box-shadow: 1px 0 10px rgba(110,227,160,.3); }
 .node:has(>.card>.cardHeader .debunkedActive)>.nodeRail { background: #df6f6f; box-shadow: 1px 0 10px rgba(223,111,111,.25); }
 .card { min-width: 0; width: 0; flex: 1 1 0; border: 1px solid #2d3531; border-left: 0; background: #151816; }
-.cardHeader { height: 31px; min-width: 0; width: 100%; padding: 0 7px 0 4px; border-bottom: 1px solid #262d29; display: grid; grid-template-columns: 16px 18px max-content minmax(0,1fr) max-content 24px; align-items: center; gap: 7px; overflow: hidden; background: #1a1e1b; }
+.cardHeader { height: 31px; min-width: 0; width: 100%; padding: 0 7px 0 4px; border-bottom: 1px solid #262d29; display: grid; grid-template-columns: 16px 18px max-content minmax(0,1fr) max-content max-content 24px; align-items: center; gap: 7px; overflow: hidden; background: #1a1e1b; }
 .dragHandle { width: 16px; height: 22px; display: grid; place-items: center; border: 0; background: transparent; color: #65706a; cursor: grab; font: 13px/1 var(--sans); user-select: none; -webkit-user-drag: element; }
 .dragHandle:hover { color: #83caa1; }
 .dragHandle:active { cursor: grabbing; }
@@ -57,6 +68,7 @@ textarea::placeholder,input::placeholder { color: #5d6561; }
 .node[data-depth="1"] .nodeType { color: #77bce4; }
 .node[data-depth="2"] .nodeType { color: #b29bdb; }
 .summary { display: block; min-width: 0; width: 100%; max-width: 100%; overflow: hidden; color: #8e9793; font-size: 11px; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+.nodeTime { color: #68736d; font: 8px var(--mono); white-space: nowrap; }
 .outcomeControls { flex: 0 0 auto; display: flex; align-items: center; gap: 3px; }
 .outcomeButton { height: 21px; padding: 0 6px; border: 1px solid transparent; background: transparent; color: #626b67; cursor: pointer; font: 600 9px var(--sans); }
 .outcomeButton:hover { border-color: #39423e; color: #aeb6b2; background: #202522; }
@@ -79,11 +91,13 @@ textarea::placeholder,input::placeholder { color: #5d6561; }
 .observations { margin-top: 7px; padding-top: 8px; border-top: 1px solid #262d29; display: grid; gap: 5px; }
 .sectionLabel { margin-bottom: 2px; color: #77817c; }
 .sectionLabel span { margin-left: 4px; color: #515a56; }
-.observation { display: flex; align-items: center; gap: 7px; }
-.observationMark { color: #55bd80; font: 12px var(--mono); }
-.observation textarea { min-width: 0; min-height: 27px; max-height: 240px; flex: 1; padding: 5px 7px; border: 1px solid #29312d; outline: none; overflow-y: auto; resize: vertical; background: #111412; color: #cfd5d2; font: 11px/1.45 var(--sans); }
+.observation { display: flex; align-items: flex-start; gap: 7px; }
+.observationMark { padding-top: 7px; color: #55bd80; font: 12px var(--mono); }
+.observationContent { min-width: 0; flex: 1; }
+.observationTime { margin: 0 0 4px 1px; display: block; color: #626e68; font: 8px var(--mono); white-space: nowrap; }
+.observation textarea { width: 100%; min-width: 0; min-height: 27px; max-height: 240px; padding: 5px 7px; border: 1px solid #29312d; outline: none; overflow-y: auto; resize: vertical; background: #111412; color: #cfd5d2; font: 11px/1.45 var(--sans); }
 .observation textarea:focus { border-color: #438562; }
-.removeObservation { padding: 3px 6px; font-size: 15px; }
+.removeObservation { margin-top: 3px; padding: 3px 6px; font-size: 15px; }
 .removeObservation:hover { color: #ed9999; }
 .actions { margin-top: 7px; display: flex; gap: 7px; }
 .textButton { padding: 4px 7px; border: 1px solid transparent; background: transparent; color: #76807b; cursor: pointer; font: 10px var(--sans); }
@@ -110,5 +124,5 @@ footer span::before { content: ''; width: 5px; height: 5px; margin-right: 6px; d
 .helpTip { margin-top: 12px; padding: 11px 12px; border-left: 2px solid #3f7656; background: #172019; }
 .helpTip strong { display: block; margin-bottom: 3px; color: #83d4a6; font-size: 10px; }
 .helpTip kbd { padding: 1px 4px; border: 1px solid #3a453f; background: #101311; color: #aeb8b3; font: 9px var(--mono); }
-@media (max-width:620px) { .topbar { padding: 0 11px; } .saveState { display:none; } .copyButton { width: 29px; overflow: hidden; white-space: nowrap; } .copyButton span { flex: 0 0 15px; } .workspace { width:min(100% - 14px,920px); padding-top:10px; } .children { margin-left:7px; padding-left:6px; padding-right:4px; } .helpBackdrop { padding: 12px; } }
+@media (max-width:620px) { .topbar { padding: 0 11px; } .brand>span:last-child,.saveState { display:none; } .headerActions { gap: 7px; } .settingsButton { width: 21px; overflow: hidden; white-space: nowrap; } .settingsButton svg { flex: 0 0 16px; } .copyButton { width: 29px; overflow: hidden; white-space: nowrap; } .copyButton span { flex: 0 0 15px; } .workspace { width:min(100% - 14px,920px); padding-top:10px; } .children { margin-left:7px; padding-left:6px; padding-right:4px; } .helpBackdrop { padding: 12px; } }
 @media (max-width:620px) { .outcomeButton span { display: none; } .outcomeButton { width: 22px; padding: 0; } }
