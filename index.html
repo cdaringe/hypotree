@@ -4,13 +4,74 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#101211" />
-    <meta name="description" content="Build and test hypotheses from evidence." />
+    <meta name="color-scheme" content="dark" />
+    <meta name="description" content="Build visual hypothesis trees, record observations, test ideas against evidence, and share your reasoning with Hypotree." />
+    <meta name="keywords" content="hypothesis tree, hypothesis testing, scientific method, debugging, root cause analysis, evidence, decision making, reasoning tool" />
+    <meta name="author" content="cdaringe" />
+    <meta name="application-name" content="Hypotree" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Hypotree" />
+
+    <link rel="canonical" href="https://cdaringe.github.io/hypotree/" />
+    <link rel="manifest" href="/hypotree/site.webmanifest" />
+    <link rel="apple-touch-icon" href="/hypotree/icon-192.png" sizes="192x192" />
     <link rel="icon" type="image/x-icon" href="/src/assets/favicon.ico" sizes="any" />
     <link rel="icon" type="image/svg+xml" href="/src/assets/favicon.svg" />
-    <title>Hypotree</title>
+
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://cdaringe.github.io/hypotree/" />
+    <meta property="og:site_name" content="Hypotree" />
+    <meta property="og:title" content="Hypotree — Visual Hypothesis Testing" />
+    <meta property="og:description" content="Build hypothesis trees, attach evidence, test ideas, and share your reasoning." />
+    <meta property="og:image" content="https://cdaringe.github.io/hypotree/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:alt" content="Hypotree interface represented as a green hypothesis node tree" />
+    <meta property="og:locale" content="en_US" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Hypotree — Visual Hypothesis Testing" />
+    <meta name="twitter:description" content="Build hypothesis trees, attach evidence, test ideas, and share your reasoning." />
+    <meta name="twitter:image" content="https://cdaringe.github.io/hypotree/og-image.png" />
+    <meta name="twitter:image:alt" content="Hypotree interface represented as a green hypothesis node tree" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Hypotree",
+        "url": "https://cdaringe.github.io/hypotree/",
+        "description": "A browser-based tool for building hypothesis trees, recording observations, testing ideas against evidence, and sharing structured reasoning.",
+        "applicationCategory": "UtilitiesApplication",
+        "applicationSubCategory": "Reasoning and debugging tool",
+        "operatingSystem": "Any",
+        "browserRequirements": "Requires JavaScript and a modern web browser",
+        "isAccessibleForFree": true,
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "author": {
+          "@type": "Person",
+          "name": "cdaringe",
+          "url": "https://github.com/cdaringe"
+        },
+        "codeRepository": "https://github.com/cdaringe/hypotree",
+        "license": "https://opensource.org/license/mit"
+      }
+    </script>
+    <title>Hypotree — Visual Hypothesis Testing &amp; Evidence Trees</title>
   </head>
   <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <noscript>Hypotree is a visual hypothesis-testing tool for structured reasoning, observations, evidence, and root cause analysis. JavaScript is required to use the interactive tree.</noscript>
     <div id="root"></div>
 
     <script src="/src/index.tsx" type="module"></script>
