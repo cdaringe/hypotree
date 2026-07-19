@@ -2,6 +2,8 @@
 
 Hypotree is a compact browser tool for breaking a problem into testable hypotheses, recording observations, and marking conclusions as proven or debunked. This of it as the scientific method for debugging.
 
+[Open Hypotree](https://cdaringe.github.io/hypotree/)
+
 It keeps reasoning explicit: claims form a tree, evidence stays attached to each claim, and conclusions include the reason they were closed.
 
 ## Use it

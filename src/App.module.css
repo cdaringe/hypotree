@@ -9,6 +9,8 @@
 .shareButton,.primaryButton,.copyButton { border: 1px solid #3c7354; background: #183225; color: #a9dfbe; cursor: pointer; font: 650 11px var(--sans); transition: 120ms ease; }
 .shareButton { gap: 7px; padding: 5px 10px; }
 .copyButton { gap: 6px; padding: 5px 9px; border-color: #35413b; background: #1a201d; color: #9da8a2; }
+.helpButton { padding: 4px 2px; border: 0; border-bottom: 1px solid transparent; background: transparent; color: #89938e; cursor: pointer; font: 600 10px var(--sans); }
+.helpButton:hover { border-bottom-color: #61c98e; color: #b7dec7; }
 .shareButton svg,.iconButton svg { fill: currentColor; }
 .shareButton:hover,.primaryButton:hover,.copyButton:hover { border-color: #58aa7c; background: #21452f; color: #d0f4dd; }
 .workspace { width: min(920px,calc(100% - 28px)); margin: 0 auto; padding: 18px 0 36px; }
@@ -22,6 +24,11 @@
 .problemSection textarea:focus { border-color: #4ea877; box-shadow: inset 2px 0 #6ee3a0,0 0 0 1px rgba(91,204,139,.16); }
 textarea::placeholder,input::placeholder { color: #5d6561; }
 .treeHeading { min-height: 32px; margin-bottom: 7px; padding: 3px 5px; border: 1px solid transparent; display: flex; justify-content: space-between; align-items: center; transition: 100ms ease; }
+.treeActions { display: flex; align-items: center; gap: 7px; }
+.expandActions { display: flex; align-items: center; }
+.expandActions button { padding: 5px 7px; border: 1px solid #303834; background: #171b19; color: #7f8984; cursor: pointer; font: 600 9px var(--sans); }
+.expandActions button+button { border-left: 0; }
+.expandActions button:hover { color: #add9bf; background: #1c2921; }
 .treeLabel { color: #a1aaa6; }
 .count { min-width: 22px; padding: 2px 5px; border: 1px solid #2f4438; color: #70c793; background: #17241c; text-align: center; font: 9px var(--mono); }
 .primaryButton { padding: 6px 10px; }
@@ -87,5 +94,21 @@ textarea::placeholder,input::placeholder { color: #5d6561; }
 .emptyState button { margin-top: 8px; background: transparent; color: #78cf9c; cursor: pointer; text-decoration: underline; }
 footer { min-height: 34px; padding: 0 18px; border-top: 1px solid #242a27; display: flex; align-items: center; justify-content: center; gap: 20px; color: #555e59; font: 9px var(--sans); }
 footer span::before { content: ''; width: 5px; height: 5px; margin-right: 6px; display: inline-block; border-radius: 50%; background: #3b7955; }
-@media (max-width:620px) { .topbar { padding: 0 11px; } .saveState { display:none; } .copyButton { width: 29px; overflow: hidden; white-space: nowrap; } .copyButton span { flex: 0 0 15px; } .workspace { width:min(100% - 14px,920px); padding-top:10px; } .children { margin-left:7px; padding-left:6px; padding-right:4px; } }
+.helpBackdrop { position: fixed; inset: 0; z-index: 30; padding: 48px 18px; display: grid; place-items: start center; overflow-y: auto; background: rgba(5,7,6,.78); backdrop-filter: blur(5px); }
+.helpPanel { width: min(600px,100%); border: 1px solid #344039; border-top: 2px solid #58ce8a; background: #141816; box-shadow: 0 20px 70px rgba(0,0,0,.5); }
+.helpHeader { height: 46px; padding: 0 13px 0 16px; border-bottom: 1px solid #2b332f; display: flex; align-items: center; justify-content: space-between; background: #191e1b; }
+.helpHeader>div { display: flex; align-items: center; gap: 8px; }
+.helpHeader h2 { color: #d7ddd9; font-size: 14px; font-weight: 650; }
+.helpHeader button { width: 27px; height: 27px; border: 0; background: transparent; color: #7d8782; cursor: pointer; font-size: 20px; }
+.helpHeader button:hover { color: #dce2df; background: #262d29; }
+.helpBody { padding: 20px; }
+.helpBody ol { list-style: none; counter-reset: steps; display: grid; gap: 6px; }
+.helpBody li { counter-increment: steps; padding: 10px 12px 10px 42px; position: relative; border: 1px solid #29312d; background: #121513; }
+.helpBody li::before { content: counter(steps,decimal-leading-zero); position: absolute; left: 12px; top: 11px; color: #5ed18f; font: 9px var(--mono); }
+.helpBody li strong { display: block; margin-bottom: 2px; color: #bec7c2; font-size: 11px; }
+.helpBody li span,.helpTip p { color: #7e8983; font-size: 11px; line-height: 1.5; }
+.helpTip { margin-top: 12px; padding: 11px 12px; border-left: 2px solid #3f7656; background: #172019; }
+.helpTip strong { display: block; margin-bottom: 3px; color: #83d4a6; font-size: 10px; }
+.helpTip kbd { padding: 1px 4px; border: 1px solid #3a453f; background: #101311; color: #aeb8b3; font: 9px var(--mono); }
+@media (max-width:620px) { .topbar { padding: 0 11px; } .saveState { display:none; } .copyButton { width: 29px; overflow: hidden; white-space: nowrap; } .copyButton span { flex: 0 0 15px; } .workspace { width:min(100% - 14px,920px); padding-top:10px; } .children { margin-left:7px; padding-left:6px; padding-right:4px; } .helpBackdrop { padding: 12px; } }
 @media (max-width:620px) { .outcomeButton span { display: none; } .outcomeButton { width: 22px; padding: 0; } }

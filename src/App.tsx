@@ -83,6 +83,9 @@ const removeNode = (nodes: Hypothesis[], id: string): Hypothesis[] => nodes
   .filter((node) => node.id !== id)
   .map((node) => ({ ...node, children: removeNode(node.children, id) }));
 
+const setAllCollapsed = (nodes: Hypothesis[], collapsed: boolean): Hypothesis[] =>
+  nodes.map((node) => ({ ...node, collapsed, children: setAllCollapsed(node.children, collapsed) }));
+
 const detachNode = (nodes: Hypothesis[], id: string): [Hypothesis[], Hypothesis | null] => {
   let detached: Hypothesis | null = null;
   const remaining = nodes.flatMap((node) => {
@@ -328,6 +331,7 @@ const App: Component = () => {
   const [saveState, setSaveState] = createSignal('Saved');
   const [copied, setCopied] = createSignal(false);
   const [markdownCopied, setMarkdownCopied] = createSignal(false);
+  const [showHelp, setShowHelp] = createSignal(false);
   const [draggingId, setDraggingId] = createSignal<string | null>(null);
   const [dropTarget, setDropTarget] = createSignal<string | null>(null);
   let saveTimer: number | undefined;
@@ -350,13 +354,32 @@ const App: Component = () => {
 
   onMount(() => {
     const handleSaveShortcut = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setShowHelp(false);
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
         event.preventDefault();
         persist();
       }
     };
+    const preventGestureZoom = (event: Event) => event.preventDefault();
+    const preventPinchZoom = (event: TouchEvent) => {
+      if (event.touches.length > 1) event.preventDefault();
+    };
+    const preventDoubleTapZoom = (event: MouseEvent) => event.preventDefault();
+
     window.addEventListener('keydown', handleSaveShortcut);
-    onCleanup(() => window.removeEventListener('keydown', handleSaveShortcut));
+    document.addEventListener('gesturestart', preventGestureZoom, { passive: false });
+    document.addEventListener('gesturechange', preventGestureZoom, { passive: false });
+    document.addEventListener('gestureend', preventGestureZoom, { passive: false });
+    document.addEventListener('touchmove', preventPinchZoom, { passive: false });
+    document.addEventListener('dblclick', preventDoubleTapZoom, { passive: false });
+    onCleanup(() => {
+      window.removeEventListener('keydown', handleSaveShortcut);
+      document.removeEventListener('gesturestart', preventGestureZoom);
+      document.removeEventListener('gesturechange', preventGestureZoom);
+      document.removeEventListener('gestureend', preventGestureZoom);
+      document.removeEventListener('touchmove', preventPinchZoom);
+      document.removeEventListener('dblclick', preventDoubleTapZoom);
+    });
   });
   onCleanup(() => window.clearTimeout(saveTimer));
 
@@ -412,6 +435,7 @@ const App: Component = () => {
         <div class={styles.brand}><span class={styles.brandMark}>H</span><span>HYPOTREE</span></div>
         <div class={styles.headerActions}>
           <span class={styles.saveState}><span class={styles.statusDot} />{saveState()}</span>
+          <button class={styles.helpButton} onClick={() => setShowHelp(true)}>How to</button>
           <button class={styles.copyButton} onClick={copyMarkdown}><span>⧉</span> {markdownCopied() ? 'Copied' : 'Markdown'}</button>
           <button class={styles.shareButton} onClick={share}><Icon name="link" size={16} /> {copied() ? 'Copied' : 'Share'}</button>
         </div>
@@ -451,9 +475,15 @@ const App: Component = () => {
             }}
           >
             <div><span class={styles.prompt}>›</span><span class={styles.treeLabel}>{draggingId() ? 'DROP HERE FOR ROOT' : 'HYPOTHESES'}</span><span class={styles.count}>{workspace().hypotheses.length.toString().padStart(2, '0')}</span></div>
-            <button class={styles.primaryButton} onClick={() => setWorkspace((current) => ({ ...current, hypotheses: [...current.hypotheses, newHypothesis()] }))}>
-              ＋ New hypothesis
-            </button>
+            <div class={styles.treeActions}>
+              <div class={styles.expandActions}>
+                <button onClick={() => setWorkspace((current) => ({ ...current, hypotheses: setAllCollapsed(current.hypotheses, false) }))} title="Expand every hypothesis">Expand all</button>
+                <button onClick={() => setWorkspace((current) => ({ ...current, hypotheses: setAllCollapsed(current.hypotheses, true) }))} title="Collapse every hypothesis">Collapse all</button>
+              </div>
+              <button class={styles.primaryButton} onClick={() => setWorkspace((current) => ({ ...current, hypotheses: [...current.hypotheses, newHypothesis()] }))}>
+                ＋ New hypothesis
+              </button>
+            </div>
           </div>
 
           <div class={styles.tree}>
@@ -483,6 +513,30 @@ const App: Component = () => {
         </section>
       </div>
       <footer><span>Stored locally</span><span>Shareable snapshot</span></footer>
+
+      <Show when={showHelp()}>
+        <div
+          class={styles.helpBackdrop}
+          onClick={(event) => event.target === event.currentTarget && setShowHelp(false)}
+        >
+          <section class={styles.helpPanel} role="dialog" aria-modal="true" aria-labelledby="how-to-title">
+            <header class={styles.helpHeader}>
+              <div><span class={styles.prompt}>›</span><h2 id="how-to-title">How to use Hypotree</h2></div>
+              <button onClick={() => setShowHelp(false)} aria-label="Close guide">×</button>
+            </header>
+            <div class={styles.helpBody}>
+              <ol>
+                <li><strong>Define the problem.</strong><span>Write the question or failure you are trying to understand.</span></li>
+                <li><strong>Form hypotheses.</strong><span>Add possible explanations. Use sub-hypotheses to break a claim into smaller testable claims.</span></li>
+                <li><strong>Record observations.</strong><span>Attach evidence to the hypothesis it supports or challenges.</span></li>
+                <li><strong>Reach a conclusion.</strong><span>Mark a hypothesis Proven or Debunked, then record the reason.</span></li>
+              </ol>
+              <div class={styles.helpTip}><strong>Move hypotheses</strong><p>Drag the ⠿ handle. Drop on a card’s top edge to place before, center to make it a child, or bottom edge to place after. Drop on the Hypotheses header to move it to the root.</p></div>
+              <div class={styles.helpTip}><strong>Save and share</strong><p>Changes save automatically. Press <kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>S</kbd> to save immediately. Share copies a snapshot URL; Markdown copies the document as text.</p></div>
+            </div>
+          </section>
+        </div>
+      </Show>
     </main>
   );
 };
