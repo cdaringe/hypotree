@@ -1,15 +1,16 @@
 .app { --sans: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; --mono: "SFMono-Regular", Consolas, monospace; min-height: 100vh; color: #d5d9d7; background: #101211; font-family: var(--sans); }
 .topbar { height: 48px; padding: 0 20px; border-bottom: 1px solid #28302c; display: flex; align-items: center; justify-content: space-between; background: rgba(20,23,21,.96); position: sticky; top: 0; z-index: 10; backdrop-filter: blur(12px); }
-.brand,.headerActions,.saveState,.shareButton { display: flex; align-items: center; }
+.brand,.headerActions,.saveState,.shareButton,.copyButton { display: flex; align-items: center; }
 .brand { gap: 9px; color: #cbd2ce; font-size: 11px; font-weight: 650; letter-spacing: .12em; }
 .brandMark { width: 22px; height: 22px; display: grid; place-items: center; border: 1px solid #4b9b70; color: #9fe6bd; background: #173424; font: 700 10px var(--mono); box-shadow: 0 0 14px rgba(65,181,112,.12); }
 .headerActions { gap: 14px; }
 .saveState { gap: 7px; color: #78817d; font: 10px var(--mono); }
 .statusDot { width: 6px; height: 6px; border-radius: 50%; background: #54d58b; box-shadow: 0 0 8px rgba(84,213,139,.65); }
-.shareButton,.primaryButton { border: 1px solid #3c7354; background: #183225; color: #a9dfbe; cursor: pointer; font: 650 11px var(--sans); transition: 120ms ease; }
+.shareButton,.primaryButton,.copyButton { border: 1px solid #3c7354; background: #183225; color: #a9dfbe; cursor: pointer; font: 650 11px var(--sans); transition: 120ms ease; }
 .shareButton { gap: 7px; padding: 5px 10px; }
+.copyButton { gap: 6px; padding: 5px 9px; border-color: #35413b; background: #1a201d; color: #9da8a2; }
 .shareButton svg,.iconButton svg { fill: currentColor; }
-.shareButton:hover,.primaryButton:hover { border-color: #58aa7c; background: #21452f; color: #d0f4dd; }
+.shareButton:hover,.primaryButton:hover,.copyButton:hover { border-color: #58aa7c; background: #21452f; color: #d0f4dd; }
 .workspace { width: min(920px,calc(100% - 28px)); margin: 0 auto; padding: 18px 0 36px; }
 .problemSection { margin-bottom: 18px; }
 .panelHeading { height: 27px; padding: 0 10px; border: 1px solid #2c3430; border-bottom: 0; display: flex; align-items: center; justify-content: space-between; background: #181b19; color: #59625e; font: 9px var(--mono); }
@@ -20,7 +21,7 @@
 .problemSection textarea { min-height: 62px; padding: 10px 12px; border: 1px solid #303934; border-left: 2px solid #53c484; background: #141715; color: #e2e6e4; font: 13px/1.45 var(--sans); }
 .problemSection textarea:focus { border-color: #4ea877; box-shadow: inset 2px 0 #6ee3a0,0 0 0 1px rgba(91,204,139,.16); }
 textarea::placeholder,input::placeholder { color: #5d6561; }
-.treeHeading { min-height: 32px; padding-bottom: 7px; display: flex; justify-content: space-between; align-items: center; }
+.treeHeading { min-height: 32px; margin-bottom: 7px; padding: 3px 5px; border: 1px solid transparent; display: flex; justify-content: space-between; align-items: center; transition: 100ms ease; }
 .treeLabel { color: #a1aaa6; }
 .count { min-width: 22px; padding: 2px 5px; border: 1px solid #2f4438; color: #70c793; background: #17241c; text-align: center; font: 9px var(--mono); }
 .primaryButton { padding: 6px 10px; }
@@ -32,7 +33,14 @@ textarea::placeholder,input::placeholder { color: #5d6561; }
 .node:has(>.card>.cardHeader .provenActive)>.nodeRail { background: #6ee3a0; box-shadow: 1px 0 10px rgba(110,227,160,.3); }
 .node:has(>.card>.cardHeader .debunkedActive)>.nodeRail { background: #df6f6f; box-shadow: 1px 0 10px rgba(223,111,111,.25); }
 .card { min-width: 0; width: 0; flex: 1 1 0; border: 1px solid #2d3531; border-left: 0; background: #151816; }
-.cardHeader { height: 31px; min-width: 0; width: 100%; padding: 0 7px; border-bottom: 1px solid #262d29; display: grid; grid-template-columns: 18px max-content minmax(0,1fr) max-content 24px; align-items: center; gap: 8px; overflow: hidden; background: #1a1e1b; }
+.cardHeader { height: 31px; min-width: 0; width: 100%; padding: 0 7px 0 4px; border-bottom: 1px solid #262d29; display: grid; grid-template-columns: 16px 18px max-content minmax(0,1fr) max-content 24px; align-items: center; gap: 7px; overflow: hidden; background: #1a1e1b; }
+.dragHandle { width: 16px; height: 22px; display: grid; place-items: center; border: 0; background: transparent; color: #65706a; cursor: grab; font: 13px/1 var(--sans); user-select: none; -webkit-user-drag: element; }
+.dragHandle:hover { color: #83caa1; }
+.dragHandle:active { cursor: grabbing; }
+.dropTarget>.card { border-color: #54c486; box-shadow: 0 0 0 1px rgba(84,196,134,.18),0 0 16px rgba(84,196,134,.08); }
+.dropBefore>.card { box-shadow: 0 -2px 0 #61d393; }
+.dropAfter>.card { box-shadow: 0 2px 0 #61d393; }
+.rootDropActive { border-color: #61d393; color: #a2e3bc; background: #193025; box-shadow: 0 0 12px rgba(84,196,134,.1); }
 .collapseButton,.iconButton,.removeObservation { border: 0; background: transparent; cursor: pointer; color: #727b77; }
 .collapseButton { width: 18px; height: 18px; display: grid; place-items: center; }
 .collapseButton:hover,.iconButton:hover { color: #d2d8d5; background: #272d2a; }
@@ -79,5 +87,5 @@ textarea::placeholder,input::placeholder { color: #5d6561; }
 .emptyState button { margin-top: 8px; background: transparent; color: #78cf9c; cursor: pointer; text-decoration: underline; }
 footer { min-height: 34px; padding: 0 18px; border-top: 1px solid #242a27; display: flex; align-items: center; justify-content: center; gap: 20px; color: #555e59; font: 9px var(--sans); }
 footer span::before { content: ''; width: 5px; height: 5px; margin-right: 6px; display: inline-block; border-radius: 50%; background: #3b7955; }
-@media (max-width:620px) { .topbar { padding: 0 11px; } .saveState { display:none; } .workspace { width:min(100% - 14px,920px); padding-top:10px; } .children { margin-left:7px; padding-left:6px; padding-right:4px; } }
+@media (max-width:620px) { .topbar { padding: 0 11px; } .saveState { display:none; } .copyButton { width: 29px; overflow: hidden; white-space: nowrap; } .copyButton span { flex: 0 0 15px; } .workspace { width:min(100% - 14px,920px); padding-top:10px; } .children { margin-left:7px; padding-left:6px; padding-right:4px; } }
 @media (max-width:620px) { .outcomeButton span { display: none; } .outcomeButton { width: 22px; padding: 0; } }

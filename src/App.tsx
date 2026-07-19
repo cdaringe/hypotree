@@ -83,6 +83,52 @@ const removeNode = (nodes: Hypothesis[], id: string): Hypothesis[] => nodes
   .filter((node) => node.id !== id)
   .map((node) => ({ ...node, children: removeNode(node.children, id) }));
 
+const detachNode = (nodes: Hypothesis[], id: string): [Hypothesis[], Hypothesis | null] => {
+  let detached: Hypothesis | null = null;
+  const remaining = nodes.flatMap((node) => {
+    if (node.id === id) {
+      detached = node;
+      return [];
+    }
+    const [children, child] = detachNode(node.children, id);
+    if (child) detached = child;
+    return [{ ...node, children }];
+  });
+  return [remaining, detached];
+};
+
+const appendChild = (nodes: Hypothesis[], parentId: string, child: Hypothesis): Hypothesis[] =>
+  nodes.map((node) => node.id === parentId
+    ? { ...node, collapsed: false, children: [...node.children, child] }
+    : { ...node, children: appendChild(node.children, parentId, child) });
+
+const containsNode = (node: Hypothesis, id: string): boolean =>
+  node.id === id || node.children.some((child) => containsNode(child, id));
+
+const insertSibling = (
+  nodes: Hypothesis[], targetId: string, moving: Hypothesis, position: 'before' | 'after',
+): Hypothesis[] => nodes.flatMap((node) => {
+  if (node.id === targetId) return position === 'before' ? [moving, node] : [node, moving];
+  return [{ ...node, children: insertSibling(node.children, targetId, moving, position) }];
+});
+
+const markdownLine = (value: string) => value.trim().replaceAll('\n', '<br>');
+const hypothesesToMarkdown = (nodes: Hypothesis[], depth = 0): string[] => nodes.flatMap((node) => {
+  const indent = '  '.repeat(depth);
+  const lines = [`${indent}- **Hypothesis:** ${markdownLine(node.statement) || '_Untitled_'}`];
+  if (node.status) lines.push(`${indent}  - **Status:** ${node.status === 'proven' ? 'Proven' : 'Debunked'}`);
+  if (node.status && node.closureReason) lines.push(`${indent}  - **Reason:** ${markdownLine(node.closureReason)}`);
+  node.observations.forEach((observation) => {
+    if (observation.text.trim()) lines.push(`${indent}  - **Observation:** ${markdownLine(observation.text)}`);
+  });
+  return [...lines, ...hypothesesToMarkdown(node.children, depth + 1)];
+});
+
+const workspaceToMarkdown = (workspace: Workspace) => [
+  '# Problem', '', workspace.problem.trim() || '_Not defined_', '',
+  '# Hypotheses', '', ...hypothesesToMarkdown(workspace.hypotheses), '',
+].join('\n');
+
 const resizeObservation = (element: HTMLTextAreaElement) => {
   element.style.height = '0';
   element.style.height = `${element.scrollHeight}px`;
@@ -93,6 +139,12 @@ const HypothesisCard: Component<{
   depth: number;
   update: (id: string, update: (node: Hypothesis) => Hypothesis) => void;
   remove: (id: string) => void;
+  draggingId: () => string | null;
+  dropTarget: () => string | null;
+  setDropTarget: (id: string | null) => void;
+  startDragging: (id: string, event: DragEvent) => void;
+  finishDragging: () => void;
+  reparent: (id: string, targetId: string | null, position?: 'before' | 'inside' | 'after') => void;
 }> = (props) => {
   const addObservation = () => props.update(props.node.id, (node) => ({
     ...node,
@@ -100,10 +152,49 @@ const HypothesisCard: Component<{
   }));
 
   return (
-    <article class={styles.node} data-depth={props.depth}>
+    <article
+      classList={{
+        [styles.node]: true,
+        [styles.dropTarget]: props.dropTarget() === `inside:${props.node.id}`,
+        [styles.dropBefore]: props.dropTarget() === `before:${props.node.id}`,
+        [styles.dropAfter]: props.dropTarget() === `after:${props.node.id}`,
+      }}
+      data-depth={props.depth}
+      onDragOver={(event) => {
+        if (props.draggingId() && props.draggingId() !== props.node.id) {
+          event.preventDefault();
+          event.stopPropagation();
+          const header = event.currentTarget.querySelector(`.${styles.cardHeader}`)?.getBoundingClientRect();
+          const position = header && event.clientY < header.top + header.height * .3
+            ? 'before'
+            : header && event.clientY > header.bottom - header.height * .3
+              ? 'after'
+              : 'inside';
+          props.setDropTarget(`${position}:${props.node.id}`);
+        }
+      }}
+      onDrop={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const draggedId = props.draggingId() || event.dataTransfer?.getData('text/plain');
+        const [position = 'inside', targetId = props.node.id] = (props.dropTarget() || '').split(':');
+        if (draggedId) props.reparent(draggedId, targetId, position as 'before' | 'inside' | 'after');
+        props.finishDragging();
+      }}
+    >
       <div class={styles.nodeRail} aria-hidden="true" />
       <div class={styles.card}>
         <div class={styles.cardHeader}>
+          <span
+            class={styles.dragHandle}
+            draggable={true}
+            onDragStart={(event) => props.startDragging(props.node.id, event)}
+            onDragEnd={props.finishDragging}
+            role="button"
+            tabIndex={0}
+            aria-label="Drag to move hypothesis"
+            title="Drag to move"
+          >⠿</span>
           <button
             class={styles.collapseButton}
             onClick={() => props.update(props.node.id, (node) => ({ ...node, collapsed: !node.collapsed }))}
@@ -211,7 +302,18 @@ const HypothesisCard: Component<{
           <Show when={props.node.children.length > 0}>
             <div class={styles.children}>
               <Index each={props.node.children}>{(child) => (
-                <HypothesisCard node={child()} depth={props.depth + 1} update={props.update} remove={props.remove} />
+                <HypothesisCard
+                  node={child()}
+                  depth={props.depth + 1}
+                  update={props.update}
+                  remove={props.remove}
+                  draggingId={props.draggingId}
+                  dropTarget={props.dropTarget}
+                  setDropTarget={props.setDropTarget}
+                  startDragging={props.startDragging}
+                  finishDragging={props.finishDragging}
+                  reparent={props.reparent}
+                />
               )}</Index>
             </div>
           </Show>
@@ -225,6 +327,9 @@ const App: Component = () => {
   const [workspace, setWorkspace] = createSignal<Workspace>(loadWorkspace());
   const [saveState, setSaveState] = createSignal('Saved');
   const [copied, setCopied] = createSignal(false);
+  const [markdownCopied, setMarkdownCopied] = createSignal(false);
+  const [draggingId, setDraggingId] = createSignal<string | null>(null);
+  const [dropTarget, setDropTarget] = createSignal<string | null>(null);
   let saveTimer: number | undefined;
 
   const persist = (snapshot = workspace()) => {
@@ -259,6 +364,26 @@ const App: Component = () => {
     setWorkspace((current) => ({ ...current, hypotheses: replaceNode(current.hypotheses, id, update) }));
   };
 
+  const reparent = (id: string, targetId: string | null, position: 'before' | 'inside' | 'after' = 'inside') => {
+    setWorkspace((current) => {
+      const [remaining, moving] = detachNode(current.hypotheses, id);
+      if (!moving || (targetId && containsNode(moving, targetId))) return current;
+      return {
+        ...current,
+        hypotheses: targetId
+          ? position === 'inside'
+            ? appendChild(remaining, targetId, moving)
+            : insertSibling(remaining, targetId, moving, position)
+          : [...remaining, moving],
+      };
+    });
+  };
+
+  const finishDragging = () => {
+    setDraggingId(null);
+    setDropTarget(null);
+  };
+
   const share = async () => {
     persist();
     try {
@@ -270,12 +395,24 @@ const App: Component = () => {
     }
   };
 
+  const copyMarkdown = async () => {
+    const markdown = workspaceToMarkdown(workspace());
+    try {
+      await navigator.clipboard.writeText(markdown);
+      setMarkdownCopied(true);
+      window.setTimeout(() => setMarkdownCopied(false), 1600);
+    } catch {
+      window.prompt('Copy this Markdown', markdown);
+    }
+  };
+
   return (
     <main class={styles.app}>
       <header class={styles.topbar}>
         <div class={styles.brand}><span class={styles.brandMark}>H</span><span>HYPOTREE</span></div>
         <div class={styles.headerActions}>
           <span class={styles.saveState}><span class={styles.statusDot} />{saveState()}</span>
+          <button class={styles.copyButton} onClick={copyMarkdown}><span>⧉</span> {markdownCopied() ? 'Copied' : 'Markdown'}</button>
           <button class={styles.shareButton} onClick={share}><Icon name="link" size={16} /> {copied() ? 'Copied' : 'Share'}</button>
         </div>
       </header>
@@ -296,8 +433,24 @@ const App: Component = () => {
         </section>
 
         <section class={styles.treeSection}>
-          <div class={styles.treeHeading}>
-            <div><span class={styles.prompt}>›</span><span class={styles.treeLabel}>HYPOTHESES</span><span class={styles.count}>{workspace().hypotheses.length.toString().padStart(2, '0')}</span></div>
+          <div
+            classList={{ [styles.treeHeading]: true, [styles.rootDropActive]: dropTarget() === 'root' }}
+            onDragOver={(event) => {
+              event.preventDefault();
+              if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+              setDropTarget('root');
+            }}
+            onDragLeave={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDropTarget(null);
+            }}
+            onDrop={(event) => {
+              event.preventDefault();
+              const id = draggingId() || event.dataTransfer?.getData('text/plain');
+              if (id) reparent(id, null);
+              finishDragging();
+            }}
+          >
+            <div><span class={styles.prompt}>›</span><span class={styles.treeLabel}>{draggingId() ? 'DROP HERE FOR ROOT' : 'HYPOTHESES'}</span><span class={styles.count}>{workspace().hypotheses.length.toString().padStart(2, '0')}</span></div>
             <button class={styles.primaryButton} onClick={() => setWorkspace((current) => ({ ...current, hypotheses: [...current.hypotheses, newHypothesis()] }))}>
               ＋ New hypothesis
             </button>
@@ -313,6 +466,16 @@ const App: Component = () => {
                   depth={0}
                   update={updateNode}
                   remove={(id) => setWorkspace((current) => ({ ...current, hypotheses: removeNode(current.hypotheses, id) }))}
+                  draggingId={draggingId}
+                  dropTarget={dropTarget}
+                  setDropTarget={setDropTarget}
+                  startDragging={(id, event) => {
+                    event.dataTransfer?.setData('text/plain', id);
+                    if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+                    setDraggingId(id);
+                  }}
+                  finishDragging={finishDragging}
+                  reparent={reparent}
                 />
               )}</Index>
             </Show>
