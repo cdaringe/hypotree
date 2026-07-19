@@ -13,4 +13,4 @@ It keeps reasoning explicit: claims form a tree, evidence stays attached to each
 
 Changes save locally and into the URL. Press `Ctrl+S` or `Cmd+S` to save immediately, and use **Share** to copy a snapshot link.
 
-Run locally with `npm install && npm run dev`.
+Run locally with `pnpm install && pnpm dev`.
