@@ -7,6 +7,8 @@ import Icon from './Icon';
 type Hypothesis = {
   id: string;
   statement: string;
+  status?: 'proven' | 'debunked';
+  closureReason?: string;
   observations: { id: string; text: string }[];
   children: Hypothesis[];
   collapsed: boolean;
@@ -15,7 +17,7 @@ type Hypothesis = {
 type Workspace = { problem: string; hypotheses: Hypothesis[] };
 type StoredWorkspace = { workspace: Workspace; updatedAt: number };
 
-const STORAGE_KEY = 'dire-method:workspace:v1';
+const STORAGE_KEY = 'hypotree:workspace:v1';
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 const newHypothesis = (): Hypothesis => ({
@@ -47,7 +49,6 @@ const isWorkspace = (value: unknown): value is Workspace => {
 };
 
 const asStoredWorkspace = (value: unknown): StoredWorkspace | null => {
-  if (isWorkspace(value)) return { workspace: value, updatedAt: 0 };
   if (!value || typeof value !== 'object') return null;
   const candidate = value as Partial<StoredWorkspace>;
   return isWorkspace(candidate.workspace) && typeof candidate.updatedAt === 'number'
@@ -82,6 +83,11 @@ const removeNode = (nodes: Hypothesis[], id: string): Hypothesis[] => nodes
   .filter((node) => node.id !== id)
   .map((node) => ({ ...node, children: removeNode(node.children, id) }));
 
+const resizeObservation = (element: HTMLTextAreaElement) => {
+  element.style.height = '0';
+  element.style.height = `${element.scrollHeight}px`;
+};
+
 const HypothesisCard: Component<{
   node: Hypothesis;
   depth: number;
@@ -107,7 +113,23 @@ const HypothesisCard: Component<{
             <span classList={{ [styles.chevron]: true, [styles.chevronClosed]: props.node.collapsed }}>⌄</span>
           </button>
           <span class={styles.nodeType}>HYPOTHESIS</span>
-          <span class={styles.summary}>{props.node.collapsed && (props.node.statement || 'Untitled hypothesis')}</span>
+          <span class={styles.summary} title={props.node.statement}>
+            {props.node.collapsed && (props.node.statement || 'Untitled hypothesis')}
+          </span>
+          <div class={styles.outcomeControls} aria-label="Hypothesis outcome">
+            <button
+              classList={{ [styles.outcomeButton]: true, [styles.provenActive]: props.node.status === 'proven' }}
+              onClick={() => props.update(props.node.id, (node) => ({ ...node, status: node.status === 'proven' ? undefined : 'proven' }))}
+              aria-pressed={props.node.status === 'proven'}
+              title="Mark as proven"
+            >✓ <span>Proven</span></button>
+            <button
+              classList={{ [styles.outcomeButton]: true, [styles.debunkedActive]: props.node.status === 'debunked' }}
+              onClick={() => props.update(props.node.id, (node) => ({ ...node, status: node.status === 'debunked' ? undefined : 'debunked' }))}
+              aria-pressed={props.node.status === 'debunked'}
+              title="Mark as debunked"
+            >× <span>Debunked</span></button>
+          </div>
           <button class={`${styles.iconButton} ${styles.dangerButton}`} onClick={() => props.remove(props.node.id)} aria-label="Delete hypothesis">
             <Icon name="delete" size={16} />
           </button>
@@ -124,20 +146,49 @@ const HypothesisCard: Component<{
               aria-label="Hypothesis statement"
             />
 
+            <Show when={props.node.status}>
+              <div classList={{
+                [styles.closure]: true,
+                [styles.provenClosure]: props.node.status === 'proven',
+                [styles.debunkedClosure]: props.node.status === 'debunked',
+              }}>
+                <span class={styles.closureLabel}>{props.node.status === 'proven' ? 'PROVEN' : 'DEBUNKED'} — REASON</span>
+                <textarea
+                  value={props.node.closureReason || ''}
+                  ref={(element) => queueMicrotask(() => {
+                    resizeObservation(element);
+                    element.focus();
+                  })}
+                  onInput={(event) => {
+                    resizeObservation(event.currentTarget);
+                    props.update(props.node.id, (node) => ({ ...node, closureReason: event.currentTarget.value }));
+                  }}
+                  placeholder={props.node.status === 'proven' ? 'What evidence proved this hypothesis?' : 'What evidence debunked this hypothesis?'}
+                  aria-label={`Reason hypothesis was ${props.node.status}`}
+                  rows={1}
+                />
+              </div>
+            </Show>
+
             <Show when={props.node.observations.length > 0}>
               <div class={styles.observations}>
                 <div class={styles.sectionLabel}>OBSERVATIONS <span>{props.node.observations.length}</span></div>
                 <Index each={props.node.observations}>{(observation) => (
                   <div class={styles.observation}>
                     <span class={styles.observationMark}>↳</span>
-                    <input
+                    <textarea
                       value={observation().text}
-                      onInput={(event) => props.update(props.node.id, (node) => ({
-                        ...node,
-                        observations: node.observations.map((item) => item.id === observation().id ? { ...item, text: event.currentTarget.value } : item),
-                      }))}
+                      ref={(element) => queueMicrotask(() => resizeObservation(element))}
+                      onInput={(event) => {
+                        resizeObservation(event.currentTarget);
+                        props.update(props.node.id, (node) => ({
+                          ...node,
+                          observations: node.observations.map((item) => item.id === observation().id ? { ...item, text: event.currentTarget.value } : item),
+                        }));
+                      }}
                       placeholder="What did you observe?"
                       aria-label="Observation"
+                      rows={1}
                     />
                     <button
                       class={styles.removeObservation}
@@ -222,7 +273,7 @@ const App: Component = () => {
   return (
     <main class={styles.app}>
       <header class={styles.topbar}>
-        <div class={styles.brand}><span class={styles.brandMark}>D</span><span>DIRE METHOD</span></div>
+        <div class={styles.brand}><span class={styles.brandMark}>H</span><span>HYPOTREE</span></div>
         <div class={styles.headerActions}>
           <span class={styles.saveState}><span class={styles.statusDot} />{saveState()}</span>
           <button class={styles.shareButton} onClick={share}><Icon name="link" size={16} /> {copied() ? 'Copied' : 'Share'}</button>
